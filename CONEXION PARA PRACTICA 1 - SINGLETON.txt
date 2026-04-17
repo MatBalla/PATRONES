@@ -1,0 +1,152 @@
+CONEXION PARA PRACTICA 1 - SINGLETON
+///////////////////////////////////////////////////////////////////////////
+
+DEPENDENCIAS .KTS
+
+// Source: https://mvnrepository.com/artifact/hikari-cp/hikari-cp
+implementation("hikari-cp:hikari-cp:3.3.0")
+	
+// Driver de SQLite para JDBC
+implementation("org.xerial:sqlite-jdbc:3.45.2.0")
+
+//////////////////////////////////////////////////////////////////////////
+
+CLASE CONEXION
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+public class Conexion {
+	private static final String URL = "jdbc:sqlite:base_de_datos.db"; //atento de cambiarle en nombre a la base_de_datos.db
+
+    public static Connection conectar() {
+        try {
+            return DriverManager.getConnection(URL);
+        } catch (SQLException e) {
+            System.err.println("Error al conectar: " + e.getMessage());
+            return null;
+        }
+    }
+
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+
+CLASE CRUD -> todo depende de la clase que quieras implementar, sea tipo persona o asi. ya que cambia el sql para ingresar los datos
+
+crud con ejemplo de "tareas"
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class DBConfig {
+	// 1. CREATE (Insertar)
+	public void insertar(String nombre, int edad, String direccion) {
+		try {
+	        Connection c = DriverManager.getConnection("jdbc:sqlite:base_de_datos.db");
+	        String sql = "INSERT INTO tareas (nombre, edad, direccion) VALUES (?, ?, ?)";
+	        PreparedStatement p = c.prepareStatement(sql);
+	        p.setString(1, nombre);
+	        p.setInt(2, edad);
+	        p.setString(3, direccion);
+	        p.executeUpdate();
+	        System.out.println("GUARDADO");
+	        c.close(); // Siempre cerramos al final
+	    } catch (Exception e) {
+	        System.out.println("No se pudo guardar: " + e.getMessage());
+	    }
+	}
+
+    // 2. READ (Leer/Consultar)
+	public void leer() {
+		try {
+	        Connection c = DriverManager.getConnection("jdbc:sqlite:base_de_datos.db"); ////atento de cambiarle en nombre a la base_de_datos.db
+	        Statement s = c.createStatement();
+	        ResultSet r = s.executeQuery("SELECT * FROM tareas");
+	        
+	        while (r.next()) {
+	            System.out.println(r.getInt("id") + " - " + r.getString("nombre") + " - " + r.getString("direccion"));
+	        }
+	        c.close();
+	    } catch (Exception e) {
+	        System.out.println("Error al mostrar: " + e.getMessage());
+	    }
+	}
+
+    // 3. UPDATE (Actualizar)
+	public void editar(int id, String nuevoNombre) {
+	    String sql = "UPDATE tareas SET nombre = ? WHERE id = ?";
+	    try (Connection conn = DriverManager.getConnection("jdbc:sqlite:base_de_datos.db");
+	         PreparedStatement p = conn.prepareStatement(sql)) {
+	        p.setString(1, nuevoNombre);
+	        p.setInt(2, id);
+	        p.executeUpdate();
+	        System.out.println("TAREA EDITADA");
+	    } catch (Exception e) { System.out.println(e.getMessage()); }
+	}
+
+    // 4. DELETE (Eliminar)
+	public void borrar(int id) {
+		try {
+	        Connection c = DriverManager.getConnection("jdbc:sqlite:base_de_datos.db");
+	        PreparedStatement p = c.prepareStatement("DELETE FROM tareas WHERE id = ?");
+	        p.setInt(1, id);
+	        p.executeUpdate();
+	        System.out.println("Eliminado correctamente.");
+	        c.close();
+	    } catch (Exception e) {
+	        System.out.println("Error: " + e.getMessage());
+	    }
+	}
+    
+    public boolean probarConexion() {
+        // La URL debe coincidir exactamente con el nombre de tu archivo en Eclipse
+        String url = "jdbc:sqlite:base_de_datos.db"; 
+        
+        // Intentamos conectar y ejecutar una consulta de integridad propia de SQLite
+        try (Connection conn = DriverManager.getConnection(url);
+             Statement stmt = conn.createStatement()) {
+            
+            if (conn != null) {
+                // "SELECT 1" es la forma más rápida de ver si la base de datos está viva
+                stmt.executeQuery("SELECT 1");
+                System.out.println("CONEXION EXITOSA");
+                return true;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error de conexión: " + e.getMessage());
+        }
+        return false;
+    }
+
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+MAIN
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+public class main {
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		DBConfig un = new DBConfig(); //Es la clase del crud
+		 un.probarConexion();
+		 
+		 //un.insertar("Mateo", 21, "Don Bosco");
+		 //un.leer();
+		 
+	}
+
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+CLASE DE EJEMPLO
+Puede ser persona, productos, etc
+poner getters y setters
+y un toString
